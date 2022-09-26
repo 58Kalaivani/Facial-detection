@@ -1,0 +1,81 @@
+#basic works using imutils
+#importing packages
+import cv2
+from google.colab.patches import cv2_imshow
+
+#read an image file
+horse = cv2.imread("/content/horse.jfif")
+cv2_imshow(horse)
+
+#read an image file in greyscale format
+horse2 = cv2.imread("/content/horse.jfif",0)
+cv2_imshow(horse2)
+
+#saving the greyscale formatted file
+cv2.imwrite("horse2.image.jpg",horse2)
+
+import imutils
+
+#translating the object
+trans = imutils.translate(horse,10,50)
+cv2_imshow(trans)
+
+#rotating the object
+rotate = imutils.rotate(horse,30)
+cv2_imshow(rotate)
+
+#resizing the object
+resize = imutils.resize(horse,1000)
+cv2_imshow(resize)
+
+#skeletonization
+gray1 = cv2.cvtColor(horse, cv2.COLOR_BGR2GRAY)
+skeleton1 = imutils.skeletonize(gray1, size=(10, 10))
+cv2_imshow(skeleton1)
+
+#using caffemodel to detect the face in an image
+puppies = cv2.imread("/content/puppies.jpg")
+cv2_imshow(puppies)
+
+!wget -N https://raw.githubusercontent.com/opencv/opencv/master/samples/dnn/face_detector/deploy.prototxt
+!wget -N https://raw.githubusercontent.com/opencv/opencv_3rdparty/dnn_samples_face_detector_20170830/res10_300x300_ssd_iter_140000.caffemodel
+
+prototxt = 'deploy.prototxt'
+model = 'res10_300x300_ssd_iter_140000.caffemodel'
+net = cv2.dnn.readNetFromCaffe(prototxt,model)
+
+#defining height and width
+(h, w) = puppies.shape[:2]
+blob = cv2.dnn.blobFromImage(cv2.resize(puppies, (300, 300)), 1.0,
+		(300, 300), (104.0, 177.0, 123.0))
+    
+net.setInput(blob)
+detections = net.forward()
+
+import numpy as np
+# loop over the detections
+for i in range(0, detections.shape[2]):
+	# extract the confidence (i.e., probability) associated with the
+	# prediction
+	confidence = detections[0, 0, i, 2]
+	# filter out weak detections by ensuring the `confidence` is
+	# greater than the minimum confidence
+	if confidence > 0.5:
+		# compute the (x, y)-coordinates of the bounding box for the
+		# object
+		box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
+		(startX, startY, endX, endY) = box.astype("int")
+ 
+		# draw the bounding box of the face along with the associated
+		# probability
+		text = "{:.2f}%".format(confidence * 100)
+		y = startY - 10 if startY - 10 > 10 else startY + 10
+		cv2.rectangle(puppies, (startX, startY), (endX, endY),
+			(0, 0, 255), 2)
+		cv2.putText(puppies, text, (startX, y),
+			cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255), 2)
+# show the output image
+cv2_imshow(puppies)
+cv2.waitKey(0)
+
+
